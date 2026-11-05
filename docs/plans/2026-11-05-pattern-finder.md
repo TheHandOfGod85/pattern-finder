@@ -202,31 +202,38 @@
 **New behaviour (must fail first):**
 
 - **A complete record becomes a design** — Given a record with a title, maker, date, type, place and image id, when it is mapped, then the design carries all of those, a parsed year, a thumbnail address, a large image address and a record link.
+  → test: `maps a complete record into a design`
 - **A record with no image is skipped** — Given a record with no image id, when it is mapped, then the result is nothing.
+  → test: `maps nothing when the image id is absent` / `maps nothing when the image id is null`
 - **A record with no date** — Given a record with no date text, then the design has no year.
+  → test: `maps a record with no date to a design with no year`
 - **A record with no maker** — Given a record with no maker, then the maker reads "Unknown".
+  → test: `reads the maker as Unknown when the maker is absent` / `... is null` / `... name is empty`
 - **A duplicate record appears once** — Given the same system number arrives twice, when the catalogue is built, then it holds one design.
+  → test: `keeps one design when the same system number arrives twice`
 - **An irrelevant object is skipped** — Given a record whose type is not wallpaper, textile or fabric, when it is mapped, then the result is nothing.
+  → test: `maps nothing when the object type is $objectType` (Wall covering, Wall hanging, Printed flannel, Sample)
 
 **Regression guards (pass either way):**
 
 - **The date parser still works** — the Phase 1 tests stay green.
+  → test: the seven Phase 1 tests in `tests/parse-year.test.ts`
 
 ### Tasks
 
-- [ ] **Task 2.1: Tests for the record mapping**
+- [x] **Task 2.1: Tests for the record mapping**
 
   **Files:** Create `tests/catalogue.test.ts`
   **Acceptance criteria:** Covers the six new scenarios above. Every test fails before Task 2.2.
   **Constraints:** Use small sample records written in the test. Do not call the network.
 
-- [ ] **Task 2.2: Implement the record mapping (make tests pass)**
+- [x] **Task 2.2: Implement the record mapping (make tests pass)**
 
   **Files:** Create `src/catalogue.ts`
   **Acceptance criteria:** All six scenarios pass.
   **Constraints:** Pure functions. The mapping takes a record and returns a design or nothing. The relevance check is a separate pure function. Follow the design document's data model.
 
-- [ ] **Task 2.3: Implement the ingest script**
+- [x] **Task 2.3: Implement the ingest script**
 
   **Files:** Create `scripts/ingest.ts`; Modify `package.json`
   **Acceptance criteria:** `npm run ingest` fetches from the V&A search endpoint and writes `public/data/designs.json` with a `source` line, a `fetchedAt` date, the credit line, and the designs.
@@ -238,7 +245,7 @@
   - Use the search endpoint only. Do not make one call per object.
   - The script must survive a failed request by reporting the failure and stopping, not by writing a partial file silently.
 
-- [ ] **Task 2.4: Run the ingest and check the output**
+- [x] **Task 2.4: Run the ingest and check the output**
 
   **Files:** `public/data/designs.json`
   **Acceptance criteria:** The file holds more than 1,000 designs. Every design has an image address. `fetchedAt` and the credit line are present. Rerunning the script produces the same shape.
@@ -258,37 +265,44 @@
 **New behaviour (must fail first):**
 
 - **A search matches the title or the maker** — Given a catalogue with "Willow Bough" by William Morris, when the reader types "morris", then that design appears.
+  → test: `finds a design when the search matches the title` / `... matches the maker`; page: `reduces the grid to the designs matching the search`
 - **A period shows only its years** — Given the period 1850 to 1899, then every card is dated in that range.
+  → test: `keeps only designs dated within $description` (1850–1899, 1750–1799, and both boundaries)
 - **A design with no year is hidden by a period** — Given a design with no year, when a period is active, then that design does not appear.
+  → test: `hides a design with no year while a period is active`
 - **The type filter works** — Given the type Wallpaper, then every card is a wallpaper.
+  → test: `keeps only designs whose object type contains the type option` / `keeps only $description designs`; page: `keeps only the chosen type`
 - **No match is honest** — Given a search that matches nothing, then the count reads "0 of N designs" and the grid is empty.
+  → test: `returns nothing when the search matches no design`; page: `shows zero matches when the search matches no design` / `... when the chosen period holds no design`
 - **Empty filters show everything** — Given no search, no period and the type All, then every design appears.
+  → test: `shows every design when the filters are empty` / `... when the search holds only whitespace`
 
 **Regression guards (pass either way):**
 
 - **The date parser and catalogue tests stay green.**
+  → test: the seven Phase 1 tests in `tests/parse-year.test.ts` and the Phase 2 tests in `tests/catalogue.test.ts`
 
 ### Tasks
 
-- [ ] **Task 3.1: Tests for the filter**
+- [x] **Task 3.1: Tests for the filter**
 
   **Files:** Create `tests/designs.test.ts`
   **Acceptance criteria:** Covers all six new scenarios. Every test fails before Task 3.2.
   **Constraints:** Use multiple normal records, one record with no year, and one empty result case.
 
-- [ ] **Task 3.2: Implement the filter (make tests pass)**
+- [x] **Task 3.2: Implement the filter (make tests pass)**
 
   **Files:** Create `src/designs.ts`
   **Acceptance criteria:** All six scenarios pass.
   **Constraints:** Pure function. The design type follows the design document.
 
-- [ ] **Task 3.3: Tests for the page wiring**
+- [x] **Task 3.3: Tests for the page wiring**
 
   **Files:** Create `tests/app.test.ts`
   **Acceptance criteria:** With a mocked catalogue response, the page renders cards; typing "morris" reduces the grid to matching cards; a period with no matches shows "0 of N designs".
   **Constraints:** Start the file with `// @vitest-environment jsdom`. Mock `fetch`. Do not call the network.
 
-- [ ] **Task 3.4: Implement the grid and the controls (make tests pass)**
+- [x] **Task 3.4: Implement the grid and the controls (make tests pass)**
 
   **Files:** Modify `src/main.ts`, `index.html`, `src/styles.css`
   **Acceptance criteria:** The page loads the catalogue, renders a card per design, and updates on search, period and type changes.
