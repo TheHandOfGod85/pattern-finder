@@ -16,8 +16,9 @@ Data: the Victoria and Albert Museum public API.
 
 - `src/parse-year.ts` — pure date parsing, tested
 - `src/catalogue.ts` — record mapping and relevance, pure, tested
-- `src/designs.ts` — the design type and the filter, pure, tested
+- `src/designs.ts` — the design type, the filter and the period helpers, pure, tested
 - `src/book.ts` — the book lookup and the year range, tested
+- `src/is-record.ts` — the shared unknown-object guard
 - `src/main.ts` — DOM wiring only
 - `scripts/ingest.ts` — fetch and write the catalogue
 - `public/data/designs.json` — the cache
