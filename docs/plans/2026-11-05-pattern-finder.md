@@ -323,23 +323,28 @@
 **New behaviour (must fail first):**
 
 - **A card opens the detail view** — Given a card, when it is clicked, then the detail view shows the large image, the title, the maker, the date, the place, the type and a link to the museum record.
+  → test: `opens the detail view with the record facts when a card is clicked`
 - **A missing maker is honest** — Given a design with no maker, then the detail view says "Unknown".
+  → test: `says Unknown when the design has no maker`
 - **Closing returns to the grid** — Given the detail view is open, when it is closed, then the grid is unchanged.
+  → test: `returns to the unchanged grid when the detail view is closed`
 - **The credit is visible** — Given the page is open, then the footer shows `© Victoria and Albert Museum, London` and the fetch date.
+  → test: `shows the museum credit and the catalogue fetch date`
 
 **Regression guards (pass either way):**
 
 - **The earlier page tests stay green.**
+  → test: the Phase 1–3 suites in `tests/parse-year.test.ts`, `tests/catalogue.test.ts`, `tests/designs.test.ts` and the Phase 3 grid tests in `tests/app.test.ts`
 
 ### Tasks
 
-- [ ] **Task 4.1: Tests for the detail view and the footer**
+- [x] **Task 4.1: Tests for the detail view and the footer**
 
   **Files:** Modify `tests/app.test.ts`
   **Acceptance criteria:** Covers the four new scenarios. Every test fails before Task 4.2.
   **Constraints:** Mock the catalogue. Do not call the network.
 
-- [ ] **Task 4.2: Implement the detail view and the footer (make tests pass)**
+- [x] **Task 4.2: Implement the detail view and the footer (make tests pass)**
 
   **Files:** Modify `index.html`, `src/main.ts`, `src/styles.css`
   **Acceptance criteria:** All four scenarios pass.
@@ -441,6 +446,8 @@ Scenarios: none — no new behaviour. Regression guard: the full test suite stay
 ## After the plan
 
 The build runs with `diamond:subagent-driven-development`, one implementer per phase, all in the foreground. The author commits after each phase.
+
+After the final phase, as its own commit: add a repo-level `.gitattributes` with `* text=auto eol=lf` (approved by the author on 2026-11-05).
 
 The evidence pack for the interview:
 

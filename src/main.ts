@@ -18,6 +18,9 @@ const typeSelect = createTypeSelect();
 const countElement = document.createElement("output");
 const gridElement = document.createElement("div");
 gridElement.className = "grid";
+const detailDialog = document.createElement("dialog");
+detailDialog.className = "detail";
+detailDialog.setAttribute("aria-labelledby", "detail-title");
 
 const controlsElement = document.createElement("section");
 controlsElement.className = "controls";
@@ -39,7 +42,16 @@ controlsElement.append(
   }),
 );
 
-appElement.replaceChildren(controlsElement, countElement, gridElement);
+appElement.replaceChildren(
+  controlsElement,
+  countElement,
+  gridElement,
+  detailDialog,
+  createFooter({
+    credit: catalogue.credit,
+    fetchedAt: catalogue.fetchedAt,
+  }),
+);
 
 function render(): void {
   const selectedPeriodStart =
@@ -162,8 +174,86 @@ function createDesignCard(design: Design): HTMLElement {
   const maker = document.createElement("p");
   maker.textContent = design.maker;
 
+  card.addEventListener("click", () => showDesignDetail(design));
   card.append(image, title, maker);
   return card;
+}
+
+function showDesignDetail(design: Design): void {
+  detailDialog.replaceChildren(
+    createDetailContent(design),
+    createCloseButton(),
+  );
+  detailDialog.showModal();
+}
+
+function createDetailContent(design: Design): HTMLElement {
+  const content = document.createElement("div");
+
+  const image = document.createElement("img");
+  image.src = design.largeImageUrl;
+  image.alt = design.title;
+
+  const title = document.createElement("h2");
+  title.id = "detail-title";
+  title.textContent = design.title;
+
+  const facts = document.createElement("dl");
+  facts.append(
+    createFact({ labelText: "Maker", valueText: design.maker }),
+    createFact({ labelText: "Date", valueText: design.dateText ?? "Unknown" }),
+    createFact({
+      labelText: "Place",
+      valueText: design.placeOfOrigin ?? "Unknown",
+    }),
+    createFact({ labelText: "Type", valueText: design.objectType }),
+  );
+
+  const recordLink = document.createElement("a");
+  recordLink.href = design.recordUrl;
+  recordLink.textContent = "View the museum record";
+
+  content.append(image, title, facts, recordLink);
+  return content;
+}
+
+function createFact(options: {
+  labelText: string;
+  valueText: string;
+}): DocumentFragment {
+  const term = document.createElement("dt");
+  term.textContent = options.labelText;
+
+  const description = document.createElement("dd");
+  description.textContent = options.valueText;
+
+  const fragment = document.createDocumentFragment();
+  fragment.append(term, description);
+  return fragment;
+}
+
+function createCloseButton(): HTMLButtonElement {
+  const closeButton = document.createElement("button");
+  closeButton.type = "button";
+  closeButton.textContent = "Close";
+  closeButton.addEventListener("click", () => detailDialog.close());
+  return closeButton;
+}
+
+function createFooter(options: {
+  credit: string;
+  fetchedAt: string;
+}): HTMLElement {
+  const footer = document.createElement("footer");
+
+  const credit = document.createElement("p");
+  credit.textContent = options.credit;
+
+  const fetchedAt = document.createElement("p");
+  fetchedAt.textContent = `Catalogue fetched ${options.fetchedAt.slice(0, 10)}`;
+
+  footer.append(credit, fetchedAt);
+  return footer;
 }
 
 async function loadCatalogue(): Promise<Catalogue> {

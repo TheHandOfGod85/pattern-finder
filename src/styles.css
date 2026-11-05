@@ -68,6 +68,7 @@ output {
   flex-direction: column;
   gap: 0.35rem;
   margin: 0;
+  cursor: pointer;
 }
 
 .card img {
@@ -88,4 +89,70 @@ output {
   margin: 0;
   font-size: 0.9rem;
   color: #6b6558;
+}
+
+.detail {
+  width: min(48rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  padding: 1.5rem;
+  border: 1px solid #b6ae9c;
+  border-radius: 0.5rem;
+  background-color: #fdfbf6;
+  color: inherit;
+}
+
+.detail::backdrop {
+  background-color: rgb(43 42 38 / 55%);
+}
+
+.detail img {
+  width: 100%;
+  max-height: 60vh;
+  object-fit: contain;
+  border-radius: 0.25rem;
+  background-color: #e7e1d4;
+}
+
+.detail h2 {
+  margin: 1rem 0 0.75rem;
+}
+
+.detail dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.35rem 1rem;
+  margin: 0 0 1.25rem;
+}
+
+.detail dt {
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b6558;
+}
+
+.detail dd {
+  margin: 0;
+}
+
+.detail button {
+  font: inherit;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid #b6ae9c;
+  border-radius: 0.25rem;
+  background-color: #fffdf8;
+  color: inherit;
+  cursor: pointer;
+}
+
+footer {
+  margin-top: 3rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #d8d2c4;
+  font-size: 0.9rem;
+  color: #6b6558;
+}
+
+footer p {
+  margin: 0.25rem 0;
 }
