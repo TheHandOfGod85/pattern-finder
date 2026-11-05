@@ -32,6 +32,42 @@ body {
   gap: 0.35rem;
 }
 
+.book-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.book-controls > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.book-controls button {
+  font: inherit;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid #b6ae9c;
+  border-radius: 0.25rem;
+  background-color: #fffdf8;
+  color: inherit;
+  cursor: pointer;
+}
+
+.book-controls button:disabled {
+  color: #9b9485;
+  cursor: default;
+}
+
+.book-controls p {
+  width: 100%;
+  margin: 0;
+  font-size: 0.9rem;
+  color: #6b6558;
+}
+
 label {
   font-size: 0.8rem;
   letter-spacing: 0.08em;

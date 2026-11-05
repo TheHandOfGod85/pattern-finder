@@ -365,35 +365,40 @@
 **New behaviour (must fail first):**
 
 - **A known book finds its era** — Given the reader enters "The Hobbit", when the lookup succeeds, then the page says 1937 and shows designs from 1922 to 1952.
+  → test: `finds the era of a known book and shows only its designs`
 - **An unknown book is honest** — Given a title the lookup cannot find, then the page says it could not find the book and the grid does not change.
+  → test: `says it could not find an unknown book and leaves the grid unchanged`
 - **An empty title is refused** — Given an empty title, when the reader asks, then the page says "Type a book title first." and makes no request.
+  → test: `refuses a title that is empty without asking the lookup` / `refuses a title that is only whitespace without asking the lookup`
 - **Reset clears everything** — Given a book, a period and a search are active, when the reader resets, then all three are cleared and every design appears.
+  → test: `clears the book, the period and the search when reset`
 
 **Regression guards (pass either way):**
 
 - **The earlier page tests stay green.**
+  → test: the Phase 1–4 suites in `tests/parse-year.test.ts`, `tests/catalogue.test.ts`, `tests/designs.test.ts` and `tests/app.test.ts`
 
 ### Tasks
 
-- [ ] **Task 5.1: Tests for the book logic**
+- [x] **Task 5.1: Tests for the book logic**
 
   **Files:** Create `tests/book.test.ts`
   **Acceptance criteria:** Covers the year range and the failure result. Every test fails before Task 5.2.
   **Constraints:** The fetch is mocked. Do not call the network.
 
-- [ ] **Task 5.2: Implement the book lookup and the year range (make tests pass)**
+- [x] **Task 5.2: Implement the book lookup and the year range (make tests pass)**
 
   **Files:** Create `src/book.ts`
   **Acceptance criteria:** All four scenarios pass.
   **Constraints:** Call `https://openlibrary.org/search.json` with `fields=title,first_publish_year` and `limit=1`. Return nothing on a failed request. The range is the year minus fifteen to the year plus fifteen.
 
-- [ ] **Task 5.3: Tests for the book controls**
+- [x] **Task 5.3: Tests for the book controls**
 
   **Files:** Modify `tests/app.test.ts`
   **Acceptance criteria:** Covers the four scenarios through the page. Every test fails before Task 5.4.
   **Constraints:** Mock both fetches: the catalogue and the book lookup.
 
-- [ ] **Task 5.4: Implement the book controls (make tests pass)**
+- [x] **Task 5.4: Implement the book controls (make tests pass)**
 
   **Files:** Modify `index.html`, `src/main.ts`, `src/styles.css`
   **Acceptance criteria:** All four scenarios pass.

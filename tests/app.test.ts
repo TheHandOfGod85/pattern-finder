@@ -81,15 +81,54 @@ const mockCatalogue: Catalogue = {
   designs: [willowBough, trellis, silkDamask, undatedWallpaper],
 };
 
-async function renderApp(): Promise<void> {
+const defaultBookResponse = {
+  docs: [{ title: "The Hobbit", first_publish_year: 1937 }],
+};
+
+const bauhausTextile: Design = {
+  id: "O5",
+  title: "Bauhaus textile",
+  maker: "Unknown",
+  dateText: "1935",
+  year: 1935,
+  objectType: "Textile design",
+  placeOfOrigin: "Germany",
+  imageId: "image-5",
+  thumbnailUrl: "https://example.test/image-5.jpg",
+  largeImageUrl: "https://example.test/image-5-large.jpg",
+  recordUrl: "https://example.test/item/O5",
+};
+
+const eraCatalogue: Catalogue = {
+  ...mockCatalogue,
+  designs: [...mockCatalogue.designs, bauhausTextile],
+};
+
+async function renderApp(
+  options: {
+    catalogue?: Catalogue;
+    bookResponse?: unknown;
+  } = {},
+): Promise<void> {
   document.body.innerHTML = '<div id="app"></div>';
+
+  const catalogue = options.catalogue ?? mockCatalogue;
+  const bookResponse = options.bookResponse ?? defaultBookResponse;
+
   vi.stubGlobal(
     "fetch",
-    vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => mockCatalogue,
+    vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+
+      if (url.includes("openlibrary.org")) {
+        const payload: unknown = await bookResponse;
+        return { ok: true, json: async () => payload };
+      }
+
+      return { ok: true, json: async () => catalogue };
     }),
   );
+
   vi.resetModules();
   await import("../src/main");
 }
@@ -197,6 +236,138 @@ describe("the design grid", () => {
 
     expect(document.querySelectorAll("#app article")).toHaveLength(0);
     expect(requireElement("#app").textContent).toContain("0 of 4 designs");
+  });
+});
+
+describe("the book era", () => {
+  it("finds the era of a known book and shows only its designs", async () => {
+    await renderApp({ catalogue: eraCatalogue });
+
+    requireElement<HTMLInputElement>("#book-title").value = "The Hobbit";
+    requireElement<HTMLButtonElement>("#find-era").click();
+
+    await vi.waitFor(() => {
+      expect(requireElement("#book-status").textContent).toContain("1937");
+    });
+
+    const statusText = requireElement("#book-status").textContent ?? "";
+    expect(statusText).toContain("1922");
+    expect(statusText).toContain("1952");
+    expect(cardTitles()).toEqual(["Bauhaus textile"]);
+    expect(requireElement("#app").textContent).toContain("1 of 5 designs");
+  });
+
+  it("says it could not find an unknown book and leaves the grid unchanged", async () => {
+    await renderApp({ bookResponse: { docs: [] } });
+    const titlesBefore = cardTitles();
+
+    requireElement<HTMLInputElement>("#book-title").value = "An imaginary book";
+    requireElement<HTMLButtonElement>("#find-era").click();
+
+    await vi.waitFor(() => {
+      expect(requireElement("#book-status").textContent).toBe(
+        "I could not find that book. Try the full title.",
+      );
+    });
+
+    expect(cardTitles()).toEqual(titlesBefore);
+    expect(requireElement("#app").textContent).toContain("4 of 4 designs");
+  });
+
+  it.each([
+    { description: "empty", title: "" },
+    { description: "only whitespace", title: "   " },
+  ])(
+    "refuses a title that is $description without asking the lookup",
+    async ({ title }) => {
+      await renderApp();
+
+      requireElement<HTMLInputElement>("#book-title").value = title;
+      requireElement<HTMLButtonElement>("#find-era").click();
+
+      expect(requireElement("#book-status").textContent).toBe(
+        "Type a book title first.",
+      );
+
+      const requestedUrls = vi
+        .mocked(fetch)
+        .mock.calls.map(([input]) => String(input));
+
+      expect(requestedUrls).toEqual(["data/designs.json"]);
+      expect(cardTitles()).toEqual([
+        "Willow Bough",
+        "Trellis",
+        "Silk damask",
+        "Wallpaper fragment",
+      ]);
+    },
+  );
+
+  it("clears the book, the period and the search when reset", async () => {
+    await renderApp({ catalogue: eraCatalogue });
+
+    const searchInput = requireElement<HTMLInputElement>("#search");
+    searchInput.value = "morris";
+    dispatchInput(searchInput);
+
+    const periodSelect = requireElement<HTMLSelectElement>("#period");
+    periodSelect.value = "1850";
+    dispatchChange(periodSelect);
+
+    const typeSelect = requireElement<HTMLSelectElement>("#type");
+    typeSelect.value = "Textile";
+    dispatchChange(typeSelect);
+
+    const bookTitleInput = requireElement<HTMLInputElement>("#book-title");
+    bookTitleInput.value = "The Hobbit";
+    requireElement<HTMLButtonElement>("#find-era").click();
+
+    await vi.waitFor(() => {
+      expect(requireElement("#book-status").textContent).toContain("1937");
+    });
+
+    requireElement<HTMLButtonElement>("#reset").click();
+
+    expect(searchInput.value).toBe("");
+    expect(periodSelect.value).toBe("");
+    expect(typeSelect.value).toBe("All");
+    expect(bookTitleInput.value).toBe("");
+    expect(requireElement("#book-status").textContent).toBe("");
+    expect(cardTitles()).toEqual([
+      "Willow Bough",
+      "Trellis",
+      "Silk damask",
+      "Wallpaper fragment",
+      "Bauhaus textile",
+    ]);
+    expect(requireElement("#app").textContent).toContain("5 of 5 designs");
+  });
+
+  it("shows the waiting state while the book lookup runs", async () => {
+    let resolveBookResponse: (payload: unknown) => void = () => {};
+    const bookResponse = new Promise<unknown>((resolve) => {
+      resolveBookResponse = resolve;
+    });
+
+    await renderApp({ bookResponse });
+
+    requireElement<HTMLInputElement>("#book-title").value = "The Hobbit";
+    requireElement<HTMLButtonElement>("#find-era").click();
+
+    expect(requireElement("#book-status").textContent).toBe(
+      "Looking up the book…",
+    );
+    expect(requireElement<HTMLButtonElement>("#find-era").disabled).toBe(true);
+    expect(requireElement<HTMLButtonElement>("#reset").disabled).toBe(true);
+
+    resolveBookResponse(defaultBookResponse);
+
+    await vi.waitFor(() => {
+      expect(requireElement("#book-status").textContent).toContain("1937");
+    });
+
+    expect(requireElement<HTMLButtonElement>("#find-era").disabled).toBe(false);
+    expect(requireElement<HTMLButtonElement>("#reset").disabled).toBe(false);
   });
 });
 

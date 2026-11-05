@@ -1,4 +1,5 @@
 import "./styles.css";
+import { buildBookYearRange, lookupFirstPublicationYear } from "./book";
 import type { Catalogue } from "./catalogue";
 import { filterDesigns, type Design, type YearRange } from "./designs";
 
@@ -15,6 +16,17 @@ const catalogue = await loadCatalogue();
 const searchInput = createSearchInput();
 const periodSelect = createPeriodSelect(catalogue.designs);
 const typeSelect = createTypeSelect();
+const bookTitleInput = createBookTitleInput();
+const findEraButton = createActionButton({
+  buttonId: "find-era",
+  labelText: "Find its era",
+});
+const resetButton = createActionButton({
+  buttonId: "reset",
+  labelText: "Reset",
+});
+const bookStatusElement = createBookStatus();
+let bookRange: YearRange | null = null;
 const countElement = document.createElement("output");
 const gridElement = document.createElement("div");
 gridElement.className = "grid";
@@ -42,8 +54,22 @@ controlsElement.append(
   }),
 );
 
+const bookControlsElement = document.createElement("section");
+bookControlsElement.className = "book-controls";
+bookControlsElement.append(
+  createControlGroup({
+    controlId: "book-title",
+    labelText: "Book you are reading",
+    control: bookTitleInput,
+  }),
+  findEraButton,
+  resetButton,
+  bookStatusElement,
+);
+
 appElement.replaceChildren(
   controlsElement,
+  bookControlsElement,
   countElement,
   gridElement,
   detailDialog,
@@ -67,7 +93,7 @@ function render(): void {
   const designs = filterDesigns({
     designs: catalogue.designs,
     search: searchInput.value,
-    period,
+    period: intersectYearRanges({ first: period, second: bookRange }),
     objectType: typeSelect.value,
   });
 
@@ -75,9 +101,70 @@ function render(): void {
   countElement.textContent = `${designs.length} of ${catalogue.designs.length} designs`;
 }
 
+async function findEra(): Promise<void> {
+  const title = bookTitleInput.value.trim();
+
+  if (title === "") {
+    bookStatusElement.textContent = "Type a book title first.";
+    return;
+  }
+
+  bookStatusElement.textContent = "Looking up the book…";
+  findEraButton.disabled = true;
+  resetButton.disabled = true;
+
+  try {
+    const year = await lookupFirstPublicationYear(title);
+
+    if (year === null) {
+      bookStatusElement.textContent =
+        "I could not find that book. Try the full title.";
+      return;
+    }
+
+    const range = buildBookYearRange(year);
+    bookRange = range;
+    bookStatusElement.textContent = `${title} was first published in ${year}. Showing designs from ${range.start} to ${range.end}.`;
+    render();
+  } finally {
+    findEraButton.disabled = false;
+    resetButton.disabled = false;
+  }
+}
+
+function resetControls(): void {
+  searchInput.value = "";
+  periodSelect.value = "";
+  typeSelect.value = "All";
+  bookTitleInput.value = "";
+  bookRange = null;
+  bookStatusElement.textContent = "";
+  render();
+}
+
+function intersectYearRanges(options: {
+  first: YearRange | null;
+  second: YearRange | null;
+}): YearRange | null {
+  if (options.first === null) {
+    return options.second;
+  }
+
+  if (options.second === null) {
+    return options.first;
+  }
+
+  return {
+    start: Math.max(options.first.start, options.second.start),
+    end: Math.min(options.first.end, options.second.end),
+  };
+}
+
 searchInput.addEventListener("input", render);
 periodSelect.addEventListener("change", render);
 typeSelect.addEventListener("change", render);
+findEraButton.addEventListener("click", () => void findEra());
+resetButton.addEventListener("click", resetControls);
 
 render();
 
@@ -87,6 +174,31 @@ function createSearchInput(): HTMLInputElement {
   input.name = "search";
   input.autocomplete = "off";
   return input;
+}
+
+function createBookTitleInput(): HTMLInputElement {
+  const input = document.createElement("input");
+  input.type = "text";
+  input.autocomplete = "off";
+  return input;
+}
+
+function createActionButton(options: {
+  buttonId: string;
+  labelText: string;
+}): HTMLButtonElement {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.id = options.buttonId;
+  button.textContent = options.labelText;
+  return button;
+}
+
+function createBookStatus(): HTMLParagraphElement {
+  const status = document.createElement("p");
+  status.id = "book-status";
+  status.setAttribute("role", "status");
+  return status;
 }
 
 function createTypeSelect(): HTMLSelectElement {
