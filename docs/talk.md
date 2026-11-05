@@ -111,7 +111,8 @@ Show the README and [`docs/deploy.md`](deploy.md).
   preview. That is the half of "getting it live" most people forget: can you stand it up again?
 - **The sub-path:** the build uses relative asset paths and the page fetches the catalogue relatively, so it
   works under `/pattern-finder/`.
-- **The deploy:** one push and a `gh-pages` publish; the settings are written down.
+- **The deploy:** a GitHub Actions workflow that installs, tests, builds and deploys on every push; the
+  settings are written down.
 
 ## 17:30–20:00 — What I would change
 
