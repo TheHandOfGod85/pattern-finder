@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { filterDesigns, type Design } from "../src/designs";
+import {
+  buildPeriodStarts,
+  filterDesigns,
+  intersectYearRanges,
+  type Design,
+  type YearRange,
+} from "../src/designs";
 
 const baseDesign: Design = {
   id: "O0",
@@ -174,6 +180,100 @@ describe("filtering designs by type", () => {
     "keeps only $description designs",
     ({ objectType, expectedIds }) => {
       expect(designIds(filter({ objectType }))).toEqual(expectedIds);
+    },
+  );
+});
+
+describe("intersecting year ranges", () => {
+  const cases: {
+    description: string;
+    first: YearRange | null;
+    second: YearRange | null;
+    expected: YearRange | null;
+  }[] = [
+    {
+      description: "both ranges overlap",
+      first: { start: 1850, end: 1899 },
+      second: { start: 1880, end: 1930 },
+      expected: { start: 1880, end: 1899 },
+    },
+    {
+      description: "one range contains the other",
+      first: { start: 1800, end: 2000 },
+      second: { start: 1850, end: 1899 },
+      expected: { start: 1850, end: 1899 },
+    },
+    {
+      description: "the ranges are disjoint",
+      first: { start: 1700, end: 1799 },
+      second: { start: 1850, end: 1899 },
+      expected: { start: 1850, end: 1799 },
+    },
+    {
+      description: "only a period is chosen",
+      first: { start: 1850, end: 1899 },
+      second: null,
+      expected: { start: 1850, end: 1899 },
+    },
+    {
+      description: "only a book range is chosen",
+      first: null,
+      second: { start: 1922, end: 1952 },
+      expected: { start: 1922, end: 1952 },
+    },
+    {
+      description: "neither is chosen",
+      first: null,
+      second: null,
+      expected: null,
+    },
+  ];
+
+  it.each(cases)(
+    "returns the intersection when $description",
+    ({ first, second, expected }) => {
+      expect(intersectYearRanges({ first, second })).toEqual(expected);
+    },
+  );
+});
+
+describe("building period starts", () => {
+  const cases: {
+    description: string;
+    designs: Design[];
+    expectedStarts: number[];
+  }[] = [
+    {
+      description: "dated designs spanning several periods",
+      designs: allDesigns,
+      expectedStarts: [1750, 1800, 1850],
+    },
+    {
+      description: "a design exactly on a period boundary",
+      designs: [createDesign({ id: "O6", year: 1800 })],
+      expectedStarts: [1800],
+    },
+    {
+      description: "a design just below a period boundary",
+      designs: [createDesign({ id: "O7", year: 1799 })],
+      expectedStarts: [1750],
+    },
+    {
+      description: "only undated designs",
+      designs: [undatedWallpaper],
+      expectedStarts: [],
+    },
+    {
+      description: "no designs",
+      designs: [],
+      expectedStarts: [],
+    },
+  ];
+
+  it.each(cases)(
+    "returns $expectedStarts for $description",
+    ({ designs, expectedStarts }) => {
+      expect(buildPeriodStarts(designs)).toEqual(expectedStarts);
     },
   );
 });

@@ -107,6 +107,11 @@ output {
   cursor: pointer;
 }
 
+.card:focus-visible {
+  outline: 2px solid #6b6558;
+  outline-offset: 2px;
+}
+
 .card img {
   width: 100%;
   aspect-ratio: 1;

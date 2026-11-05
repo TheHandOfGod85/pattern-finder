@@ -104,9 +104,12 @@ const eraCatalogue: Catalogue = {
   designs: [...mockCatalogue.designs, bauhausTextile],
 };
 
+type CatalogueFailure = "rejected" | "not-found" | "malformed";
+
 async function renderApp(
   options: {
     catalogue?: Catalogue;
+    catalogueFailure?: CatalogueFailure;
     bookResponse?: unknown;
   } = {},
 ): Promise<void> {
@@ -123,6 +126,18 @@ async function renderApp(
       if (url.includes("openlibrary.org")) {
         const payload: unknown = await bookResponse;
         return { ok: true, json: async () => payload };
+      }
+
+      if (options.catalogueFailure === "rejected") {
+        throw new Error("The catalogue could not be loaded.");
+      }
+
+      if (options.catalogueFailure === "not-found") {
+        return { ok: false, status: 404, json: async () => ({}) };
+      }
+
+      if (options.catalogueFailure === "malformed") {
+        return { ok: true, json: async () => ({}) };
       }
 
       return { ok: true, json: async () => catalogue };
@@ -160,7 +175,7 @@ function dispatchChange(element: HTMLSelectElement): void {
   element.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
-function clickCard(title: string): void {
+function findCard(title: string): HTMLElement {
   const card = Array.from(
     document.querySelectorAll<HTMLElement>("#app article"),
   ).find((article) => article.querySelector("h2")?.textContent === title);
@@ -169,7 +184,11 @@ function clickCard(title: string): void {
     throw new Error(`The page is missing the card ${title}.`);
   }
 
-  card.click();
+  return card;
+}
+
+function clickCard(title: string): void {
+  findCard(title).click();
 }
 
 function detailFactValue(labelText: string): string | null {
@@ -182,6 +201,7 @@ function detailFactValue(labelText: string): string | null {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 describe("the design grid", () => {
@@ -405,6 +425,21 @@ describe("the design detail view", () => {
     expect(recordLink.textContent?.trim()).not.toBe("");
   });
 
+  it.each([
+    { description: "Enter", key: "Enter" },
+    { description: "Space", key: " " },
+  ])(
+    "opens the detail view when a card is activated with $description",
+    ({ key }) => {
+      findCard("Willow Bough").dispatchEvent(
+        new KeyboardEvent("keydown", { key, bubbles: true }),
+      );
+
+      expect(requireElement<HTMLDialogElement>("#app dialog").open).toBe(true);
+      expect(requireElement("#app dialog h2").textContent).toBe("Willow Bough");
+    },
+  );
+
   it("says Unknown when the design has no maker", () => {
     clickCard("Wallpaper fragment");
 
@@ -428,6 +463,31 @@ describe("the design detail view", () => {
     expect(dialog.open).toBe(false);
     expect(cardTitles()).toEqual(titlesBefore);
   });
+});
+
+describe("a catalogue that cannot load", () => {
+  it.each([
+    { description: "the request rejects", failure: "rejected" as const },
+    { description: "the response is not ok", failure: "not-found" as const },
+    { description: "the payload is malformed", failure: "malformed" as const },
+  ])(
+    "shows the designed message and the credit when $description",
+    async ({ failure }) => {
+      const consoleError = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+
+      await renderApp({ catalogueFailure: failure });
+
+      expect(requireElement("#app p").textContent).toBe(
+        "The catalogue could not load. Run the ingest, then try again.",
+      );
+      expect(requireElement("#app footer").textContent).toContain(
+        "© Victoria and Albert Museum, London",
+      );
+      expect(consoleError).toHaveBeenCalledWith(expect.any(Error));
+    },
+  );
 });
 
 describe("the page footer", () => {

@@ -1,9 +1,15 @@
 import "./styles.css";
 import { buildBookYearRange, lookupFirstPublicationYear } from "./book";
-import type { Catalogue } from "./catalogue";
-import { filterDesigns, type Design, type YearRange } from "./designs";
+import { CREDIT_LINE, type Catalogue } from "./catalogue";
+import {
+  buildPeriodStarts,
+  filterDesigns,
+  intersectYearRanges,
+  PERIOD_SIZE,
+  type Design,
+  type YearRange,
+} from "./designs";
 
-const PERIOD_SIZE = 50;
 const OBJECT_TYPE_OPTIONS = ["All", "Wallpaper", "Textile", "Fabric"] as const;
 
 const appElement = document.querySelector<HTMLDivElement>("#app");
@@ -12,72 +18,111 @@ if (appElement === null) {
   throw new Error("The app element is missing from index.html.");
 }
 
-const catalogue = await loadCatalogue();
-const searchInput = createSearchInput();
-const periodSelect = createPeriodSelect(catalogue.designs);
-const typeSelect = createTypeSelect();
-const bookTitleInput = createBookTitleInput();
-const findEraButton = createActionButton({
-  buttonId: "find-era",
-  labelText: "Find its era",
-});
-const resetButton = createActionButton({
-  buttonId: "reset",
-  labelText: "Reset",
-});
-const bookStatusElement = createBookStatus();
+let catalogue: Catalogue;
+let searchInput: HTMLInputElement;
+let periodSelect: HTMLSelectElement;
+let typeSelect: HTMLSelectElement;
+let bookTitleInput: HTMLInputElement;
+let findEraButton: HTMLButtonElement;
+let resetButton: HTMLButtonElement;
+let bookStatusElement: HTMLParagraphElement;
 let bookRange: YearRange | null = null;
-const countElement = document.createElement("output");
-const gridElement = document.createElement("div");
-gridElement.className = "grid";
-const detailDialog = document.createElement("dialog");
-detailDialog.className = "detail";
-detailDialog.setAttribute("aria-labelledby", "detail-title");
+let countElement: HTMLOutputElement;
+let gridElement: HTMLDivElement;
+let detailDialog: HTMLDialogElement;
 
-const controlsElement = document.createElement("section");
-controlsElement.className = "controls";
-controlsElement.append(
-  createControlGroup({
-    controlId: "search",
-    labelText: "Search",
-    control: searchInput,
-  }),
-  createControlGroup({
-    controlId: "period",
-    labelText: "Period",
-    control: periodSelect,
-  }),
-  createControlGroup({
-    controlId: "type",
-    labelText: "Type",
-    control: typeSelect,
-  }),
-);
+let loadedCatalogue: Catalogue | null = null;
 
-const bookControlsElement = document.createElement("section");
-bookControlsElement.className = "book-controls";
-bookControlsElement.append(
-  createControlGroup({
-    controlId: "book-title",
-    labelText: "Book you are reading",
-    control: bookTitleInput,
-  }),
-  findEraButton,
-  resetButton,
-  bookStatusElement,
-);
+try {
+  loadedCatalogue = await loadCatalogue();
+} catch (error) {
+  console.error(error);
+}
 
-appElement.replaceChildren(
-  controlsElement,
-  bookControlsElement,
-  countElement,
-  gridElement,
-  detailDialog,
-  createFooter({
-    credit: catalogue.credit,
-    fetchedAt: catalogue.fetchedAt,
-  }),
-);
+if (loadedCatalogue === null) {
+  appElement.replaceChildren(
+    createCatalogueFailure(),
+    createFooter({ credit: CREDIT_LINE }),
+  );
+} else {
+  catalogue = loadedCatalogue;
+  startApp(appElement);
+}
+
+function startApp(appElement: HTMLDivElement): void {
+  searchInput = createSearchInput();
+  periodSelect = createPeriodSelect(catalogue.designs);
+  typeSelect = createTypeSelect();
+  bookTitleInput = createBookTitleInput();
+  findEraButton = createActionButton({
+    buttonId: "find-era",
+    labelText: "Find its era",
+  });
+  resetButton = createActionButton({
+    buttonId: "reset",
+    labelText: "Reset",
+  });
+  bookStatusElement = createBookStatus();
+  countElement = document.createElement("output");
+  gridElement = document.createElement("div");
+  gridElement.className = "grid";
+  detailDialog = document.createElement("dialog");
+  detailDialog.className = "detail";
+  detailDialog.setAttribute("aria-labelledby", "detail-title");
+
+  const controlsElement = document.createElement("section");
+  controlsElement.className = "controls";
+  controlsElement.append(
+    createControlGroup({
+      controlId: "search",
+      labelText: "Search",
+      control: searchInput,
+    }),
+    createControlGroup({
+      controlId: "period",
+      labelText: "Period",
+      control: periodSelect,
+    }),
+    createControlGroup({
+      controlId: "type",
+      labelText: "Type",
+      control: typeSelect,
+    }),
+  );
+
+  const bookControlsElement = document.createElement("section");
+  bookControlsElement.className = "book-controls";
+  bookControlsElement.append(
+    createControlGroup({
+      controlId: "book-title",
+      labelText: "Book you are reading",
+      control: bookTitleInput,
+    }),
+    findEraButton,
+    resetButton,
+    bookStatusElement,
+  );
+
+  appElement.replaceChildren(
+    controlsElement,
+    bookControlsElement,
+    countElement,
+    gridElement,
+    detailDialog,
+    createFooter({
+      credit: catalogue.credit,
+      fetchedAt: catalogue.fetchedAt,
+    }),
+  );
+
+  searchInput.addEventListener("input", render);
+  periodSelect.addEventListener("change", render);
+  typeSelect.addEventListener("change", render);
+  findEraButton.addEventListener("click", () => void findEra());
+  resetButton.addEventListener("click", resetControls);
+
+  render();
+}
 
 function render(): void {
   const selectedPeriodStart =
@@ -142,31 +187,12 @@ function resetControls(): void {
   render();
 }
 
-function intersectYearRanges(options: {
-  first: YearRange | null;
-  second: YearRange | null;
-}): YearRange | null {
-  if (options.first === null) {
-    return options.second;
-  }
-
-  if (options.second === null) {
-    return options.first;
-  }
-
-  return {
-    start: Math.max(options.first.start, options.second.start),
-    end: Math.min(options.first.end, options.second.end),
-  };
+function createCatalogueFailure(): HTMLParagraphElement {
+  const message = document.createElement("p");
+  message.textContent =
+    "The catalogue could not load. Run the ingest, then try again.";
+  return message;
 }
-
-searchInput.addEventListener("input", render);
-periodSelect.addEventListener("change", render);
-typeSelect.addEventListener("change", render);
-findEraButton.addEventListener("click", () => void findEra());
-resetButton.addEventListener("click", resetControls);
-
-render();
 
 function createSearchInput(): HTMLInputElement {
   const input = document.createElement("input");
@@ -225,26 +251,6 @@ function createPeriodSelect(designs: readonly Design[]): HTMLSelectElement {
   return select;
 }
 
-function buildPeriodStarts(designs: readonly Design[]): number[] {
-  const years = designs
-    .map((design) => design.year)
-    .filter((year): year is number => year !== null);
-
-  if (years.length === 0) {
-    return [];
-  }
-
-  const firstStart = Math.floor(Math.min(...years) / PERIOD_SIZE) * PERIOD_SIZE;
-  const latestYear = Math.max(...years);
-  const starts: number[] = [];
-
-  for (let start = firstStart; start <= latestYear; start += PERIOD_SIZE) {
-    starts.push(start);
-  }
-
-  return starts;
-}
-
 function createOption(options: {
   value: string;
   label: string;
@@ -274,6 +280,8 @@ function createControlGroup(options: {
 function createDesignCard(design: Design): HTMLElement {
   const card = document.createElement("article");
   card.className = "card";
+  card.setAttribute("role", "button");
+  card.tabIndex = 0;
 
   const image = document.createElement("img");
   image.src = design.thumbnailUrl;
@@ -287,6 +295,14 @@ function createDesignCard(design: Design): HTMLElement {
   maker.textContent = design.maker;
 
   card.addEventListener("click", () => showDesignDetail(design));
+  card.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+
+    event.preventDefault();
+    showDesignDetail(design);
+  });
   card.append(image, title, maker);
   return card;
 }
@@ -354,17 +370,20 @@ function createCloseButton(): HTMLButtonElement {
 
 function createFooter(options: {
   credit: string;
-  fetchedAt: string;
+  fetchedAt?: string;
 }): HTMLElement {
   const footer = document.createElement("footer");
 
   const credit = document.createElement("p");
   credit.textContent = options.credit;
+  footer.append(credit);
 
-  const fetchedAt = document.createElement("p");
-  fetchedAt.textContent = `Catalogue fetched ${options.fetchedAt.slice(0, 10)}`;
+  if (options.fetchedAt !== undefined) {
+    const fetchedAt = document.createElement("p");
+    fetchedAt.textContent = `Catalogue fetched ${options.fetchedAt.slice(0, 10)}`;
+    footer.append(fetchedAt);
+  }
 
-  footer.append(credit, fetchedAt);
   return footer;
 }
 

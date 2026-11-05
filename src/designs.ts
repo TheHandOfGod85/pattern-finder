@@ -26,6 +26,46 @@ export type FilterDesignsOptions = {
 
 const ALL_TYPES_OPTION = "all";
 
+export const PERIOD_SIZE = 50;
+
+export function intersectYearRanges(options: {
+  first: YearRange | null;
+  second: YearRange | null;
+}): YearRange | null {
+  if (options.first === null) {
+    return options.second;
+  }
+
+  if (options.second === null) {
+    return options.first;
+  }
+
+  return {
+    start: Math.max(options.first.start, options.second.start),
+    end: Math.min(options.first.end, options.second.end),
+  };
+}
+
+export function buildPeriodStarts(designs: readonly Design[]): number[] {
+  const years = designs
+    .map((design) => design.year)
+    .filter((year): year is number => year !== null);
+
+  if (years.length === 0) {
+    return [];
+  }
+
+  const firstStart = Math.floor(Math.min(...years) / PERIOD_SIZE) * PERIOD_SIZE;
+  const latestYear = Math.max(...years);
+  const starts: number[] = [];
+
+  for (let start = firstStart; start <= latestYear; start += PERIOD_SIZE) {
+    starts.push(start);
+  }
+
+  return starts;
+}
+
 function matchesSearch(design: Design, search: string): boolean {
   if (search === "") {
     return true;

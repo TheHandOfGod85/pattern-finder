@@ -420,24 +420,24 @@ Scenarios: none — no new behaviour. Regression guard: the full test suite stay
 
 ### Tasks
 
-- [ ] **Task 6.1: Write the runbook**
+- [x] **Task 6.1: Write the runbook**
 
   **Files:** Modify `README.md`
   **Acceptance criteria:** The README names the install, ingest, test, build and preview commands. It has a "start again from nothing" section with ordered steps. It records the V&A credit and the four-week cache rule.
   **Constraints:** Exact commands in PowerShell.
 
-- [ ] **Task 6.2: Build and check `dist/`**
+- [x] **Task 6.2: Build and check `dist/`**
 
   **Files:** None
   **Acceptance criteria:** `npm run build` succeeds. `dist/` holds `index.html`, the built assets and `data/designs.json`. Every asset path is relative, so the site works below a sub-path.
 
-- [ ] **Task 6.3: Write the deploy steps**
+- [x] **Task 6.3: Write the deploy steps**
 
   **Files:** Create `docs/deploy.md`
   **Acceptance criteria:** The file gives the exact PowerShell commands the author runs to publish to GitHub Pages, and the settings to choose in the repository. It names the expected address.
   **Constraints:** The author runs the git and GitHub commands. Do not run them.
 
-- [ ] **Task 6.4: Orchestrator check of the built site**
+- [x] **Task 6.4: Orchestrator check of the built site**
 
   **Run by: orchestrator**
   **Files:** None
