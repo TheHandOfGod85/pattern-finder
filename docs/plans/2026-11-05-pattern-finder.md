@@ -12,7 +12,9 @@
 
 **North-star step:** Not owned. This is a standalone POC with no product design behind it.
 
-**Plan start:** [left blank]
+**Plan start:** `426a0501c8ff93c0c9176ee97b4c770a9c05b4dc`
+
+> **Start the build session inside `C:\repos\pattern-finder`.** The diamond implementer agent runs git commands when it starts, so the session folder must be a git repository. A session opened in a non-repository folder fails before the first task.
 
 ---
 
@@ -40,18 +42,25 @@
 **New behaviour (must fail first):**
 
 - **A circa date** — Given the date text "ca.1786", when the year is read, then the year is 1786.
+  → test: `reads the year from a circa date`
 - **A date range** — Given "1860-1870", when the year is read, then the year is 1860.
+  → test: `reads the first year of a date range`
 - **A decade** — Given "1890s", then the year is 1890.
+  → test: `reads the year from a decade`
 - **A century** — Given "19th century", then the year is 1850.
+  → test: `reads the midpoint year of a century`
 - **A qualified century** — Given "early 18th century", then the year is 1750.
+  → test: `reads the midpoint year of a qualified century`
 - **No year in the text** — Given "unknown", then there is no year.
+  → test: `returns nothing when the text holds no year`
 - **Empty text** — Given an empty or missing date, then there is no year.
+  → test: `returns nothing for an empty or missing date`
 
 **Regression guards (pass either way):** none — this is the first phase.
 
 ### Tasks
 
-- [ ] **Task 1.1: Project setup**
+- [x] **Task 1.1: Project setup**
 
   **Files:** Create `package.json`, `tsconfig.json`, `vite.config.ts`, `index.html`, `src/main.ts`, `src/styles.css`, `CLAUDE.md`, `.gitignore`
   **Acceptance criteria:** `npm install` succeeds. `npm run build` succeeds and writes `dist/`.
@@ -161,19 +170,19 @@
   - The ingest makes no more than one request per second.
   ```
 
-- [ ] **Task 1.2: Tests for the date parser**
+- [x] **Task 1.2: Tests for the date parser**
 
   **Files:** Create `tests/parse-year.test.ts`
   **Acceptance criteria:** Covers all seven scenarios above. Every test fails before Task 1.3.
   **Constraints:** Test names describe the behaviour, not the function.
 
-- [ ] **Task 1.3: Implement the date parser (make tests pass)**
+- [x] **Task 1.3: Implement the date parser (make tests pass)**
 
   **Files:** Create `src/parse-year.ts`
   **Acceptance criteria:** All seven scenarios pass. `npm test` is green.
   **Constraints:** Pure function. No network, no page, no clock.
 
-- [ ] **Task 1.4: Verify the build**
+- [x] **Task 1.4: Verify the build**
 
   **Files:** None
   **Acceptance criteria:** `npm test` passes. `npm run build` succeeds and `dist/index.html` exists.
