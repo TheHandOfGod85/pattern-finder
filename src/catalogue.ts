@@ -1,4 +1,5 @@
 import type { Design } from "./designs";
+import { isRecord } from "./is-record";
 import { parseYear } from "./parse-year";
 
 export const CREDIT_LINE = "© Victoria and Albert Museum, London";
@@ -12,10 +13,6 @@ export type Catalogue = {
 };
 
 const relevantObjectTypeFragments = ["wallpaper", "textile", "fabric"];
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 function readNonEmptyText(value: unknown): string | null {
   if (typeof value !== "string" || value.trim() === "") {

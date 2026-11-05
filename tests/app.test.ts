@@ -277,6 +277,51 @@ describe("the book era", () => {
     expect(requireElement("#app").textContent).toContain("1 of 5 designs");
   });
 
+  it("reports the effective range within the chosen period when the period narrows the era", async () => {
+    await renderApp({ catalogue: eraCatalogue });
+
+    requireElement<HTMLInputElement>("#book-title").value = "The Hobbit";
+    requireElement<HTMLButtonElement>("#find-era").click();
+
+    await vi.waitFor(() => {
+      expect(requireElement("#book-status").textContent).toContain("1937");
+    });
+
+    const periodSelect = requireElement<HTMLSelectElement>("#period");
+    periodSelect.value = "1900";
+    dispatchChange(periodSelect);
+
+    const statusText = requireElement("#book-status").textContent ?? "";
+    expect(statusText).toContain("1937");
+    expect(statusText).toContain("1922");
+    expect(statusText).toContain("1949");
+    expect(statusText).toContain("within the chosen period");
+    expect(requireElement("#app").textContent).toContain("1 of 5 designs");
+  });
+
+  it("says no designs fall within the book era when the chosen period is disjoint", async () => {
+    await renderApp({ catalogue: eraCatalogue });
+
+    requireElement<HTMLInputElement>("#book-title").value = "The Hobbit";
+    requireElement<HTMLButtonElement>("#find-era").click();
+
+    await vi.waitFor(() => {
+      expect(requireElement("#book-status").textContent).toContain("1937");
+    });
+
+    const periodSelect = requireElement<HTMLSelectElement>("#period");
+    periodSelect.value = "1800";
+    dispatchChange(periodSelect);
+
+    const statusText = requireElement("#book-status").textContent ?? "";
+    expect(statusText).toContain("1937");
+    expect(statusText).toContain(
+      "No designs in the chosen period fall within 1922 to 1952",
+    );
+    expect(document.querySelectorAll("#app article")).toHaveLength(0);
+    expect(requireElement("#app").textContent).toContain("0 of 5 designs");
+  });
+
   it("says it could not find an unknown book and leaves the grid unchanged", async () => {
     await renderApp({ bookResponse: { docs: [] } });
     const titlesBefore = cardTitles();
@@ -500,5 +545,18 @@ describe("the page footer", () => {
 
     expect(footerText).toContain("© Victoria and Albert Museum, London");
     expect(footerText).toContain("Catalogue fetched 2026-11-05");
+  });
+});
+
+describe("the page heading", () => {
+  beforeEach(async () => {
+    await renderApp();
+  });
+
+  it("names the page with a top-level heading", () => {
+    const heading = requireElement("#app h1");
+
+    expect(heading.textContent).toBe("Pattern Finder");
+    expect(requireElement("#app").firstElementChild).toBe(heading);
   });
 });

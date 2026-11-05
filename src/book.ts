@@ -1,4 +1,5 @@
 import type { YearRange } from "./designs";
+import { isRecord } from "./is-record";
 
 const BOOK_LOOKUP_URL = "https://openlibrary.org/search.json";
 const YEAR_RANGE_PADDING = 15;
@@ -54,8 +55,4 @@ function getFirstDocument(payload: unknown): Record<string, unknown> | null {
 
   const firstDocument = payload["docs"][0];
   return isRecord(firstDocument) ? firstDocument : null;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

@@ -9,8 +9,15 @@ import {
   type Design,
   type YearRange,
 } from "./designs";
+import { isRecord } from "./is-record";
 
 const OBJECT_TYPE_OPTIONS = ["All", "Wallpaper", "Textile", "Fabric"] as const;
+
+type BookEra = {
+  title: string;
+  year: number;
+  range: YearRange;
+};
 
 const appElement = document.querySelector<HTMLDivElement>("#app");
 
@@ -26,7 +33,8 @@ let bookTitleInput: HTMLInputElement;
 let findEraButton: HTMLButtonElement;
 let resetButton: HTMLButtonElement;
 let bookStatusElement: HTMLParagraphElement;
-let bookRange: YearRange | null = null;
+let bookEra: BookEra | null = null;
+let bookNotice: string | null = null;
 let countElement: HTMLOutputElement;
 let gridElement: HTMLDivElement;
 let detailDialog: HTMLDialogElement;
@@ -70,6 +78,9 @@ function startApp(appElement: HTMLDivElement): void {
   detailDialog.className = "detail";
   detailDialog.setAttribute("aria-labelledby", "detail-title");
 
+  const pageTitle = document.createElement("h1");
+  pageTitle.textContent = "Pattern Finder";
+
   const controlsElement = document.createElement("section");
   controlsElement.className = "controls";
   controlsElement.append(
@@ -104,6 +115,7 @@ function startApp(appElement: HTMLDivElement): void {
   );
 
   appElement.replaceChildren(
+    pageTitle,
     controlsElement,
     bookControlsElement,
     countElement,
@@ -138,23 +150,64 @@ function render(): void {
   const designs = filterDesigns({
     designs: catalogue.designs,
     search: searchInput.value,
-    period: intersectYearRanges({ first: period, second: bookRange }),
+    period: intersectYearRanges({
+      first: period,
+      second: bookEra?.range ?? null,
+    }),
     objectType: typeSelect.value,
   });
 
   gridElement.replaceChildren(...designs.map(createDesignCard));
   countElement.textContent = `${designs.length} of ${catalogue.designs.length} designs`;
+  bookStatusElement.textContent = buildBookStatusText({
+    bookEra,
+    bookNotice,
+    period,
+  });
+}
+
+function buildBookStatusText(options: {
+  bookEra: BookEra | null;
+  bookNotice: string | null;
+  period: YearRange | null;
+}): string {
+  if (options.bookNotice !== null) {
+    return options.bookNotice;
+  }
+
+  if (options.bookEra === null) {
+    return "";
+  }
+
+  const publicationSentence = `${options.bookEra.title} was first published in ${options.bookEra.year}.`;
+
+  if (options.period === null) {
+    return `${publicationSentence} Showing designs from ${options.bookEra.range.start} to ${options.bookEra.range.end}.`;
+  }
+
+  const effectiveRange = intersectYearRanges({
+    first: options.period,
+    second: options.bookEra.range,
+  });
+
+  if (effectiveRange === null || effectiveRange.start > effectiveRange.end) {
+    return `${publicationSentence} No designs in the chosen period fall within ${options.bookEra.range.start} to ${options.bookEra.range.end}.`;
+  }
+
+  return `${publicationSentence} Showing designs from ${effectiveRange.start} to ${effectiveRange.end} within the chosen period.`;
 }
 
 async function findEra(): Promise<void> {
   const title = bookTitleInput.value.trim();
 
   if (title === "") {
-    bookStatusElement.textContent = "Type a book title first.";
+    bookNotice = "Type a book title first.";
+    render();
     return;
   }
 
-  bookStatusElement.textContent = "Looking up the book…";
+  bookNotice = "Looking up the book…";
+  render();
   findEraButton.disabled = true;
   resetButton.disabled = true;
 
@@ -162,14 +215,13 @@ async function findEra(): Promise<void> {
     const year = await lookupFirstPublicationYear(title);
 
     if (year === null) {
-      bookStatusElement.textContent =
-        "I could not find that book. Try the full title.";
+      bookNotice = "I could not find that book. Try the full title.";
+      render();
       return;
     }
 
-    const range = buildBookYearRange(year);
-    bookRange = range;
-    bookStatusElement.textContent = `${title} was first published in ${year}. Showing designs from ${range.start} to ${range.end}.`;
+    bookEra = { title, year, range: buildBookYearRange(year) };
+    bookNotice = null;
     render();
   } finally {
     findEraButton.disabled = false;
@@ -182,8 +234,8 @@ function resetControls(): void {
   periodSelect.value = "";
   typeSelect.value = "All";
   bookTitleInput.value = "";
-  bookRange = null;
-  bookStatusElement.textContent = "";
+  bookEra = null;
+  bookNotice = null;
   render();
 }
 
@@ -401,10 +453,6 @@ async function loadCatalogue(): Promise<Catalogue> {
   }
 
   return payload;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function isDesign(value: unknown): value is Design {
